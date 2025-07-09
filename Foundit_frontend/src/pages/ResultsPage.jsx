@@ -7,36 +7,37 @@ const ResultsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const fetchResults = async () => {
-    console.log("🟢 Fetching from:", `http://localhost:5000/search?q=${encodeURIComponent(query)}`);
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL;
 
-    try {
-      const res = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
+    const fetchResults = async () => {
+      console.log("🟢 Fetching from:", `${API_URL}/search?q=${encodeURIComponent(query)}`);
 
-      console.log("🔵 Response from backend:", data);
+      try {
+        const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
 
-      if (data.success) {
-        setResults(data.results);
-      } else {
-        console.warn("⚠️ Backend responded without success");
+        console.log("🔵 Response from backend:", data);
+
+        if (data.success) {
+          setResults(data.results);
+        } else {
+          console.warn("⚠️ Backend responded without success");
+          setResults([]);
+        }
+      } catch (err) {
+        console.error("❌ Fetch failed", err);
         setResults([]);
       }
-    } catch (err) {
-      console.error("❌ Fetch failed", err);
-      setResults([]);
+
+      setLoading(false);
+    };
+
+    if (query) {
+      console.log("🟡 Query from URL:", query);
+      fetchResults();
     }
-
-    setLoading(false);
-  };
-
-  if (query) {
-    console.log("🟡 Query from URL:", query);
-    fetchResults();
-  }
-}, [query]);
-
+  }, [query]);
 
   return (
     <div className="min-h-screen bg-blue-50 p-6 mt-15">
