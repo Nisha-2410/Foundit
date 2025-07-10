@@ -83,52 +83,65 @@ router.get("/", async (req, res) => {
 
   console.log(`🔵 Final products after filtering: ${filtered.length}`);
 
-  const topPicks = (filtered.length ? filtered : products).slice(0, 3);
+ // STEP 4: AI reason generation (batched)
+const selectedProducts = filtered.length ? filtered : products;
 
-  // STEP 4: AI reason + formatted output
-  const results = await Promise.all(
-    topPicks.map(async (item) => {
-      const prompt = `You are a helpful shopping assistant.
-User is searching for: "${userQuery}"
-Here is the product:
-- Title: ${item.title}
-- Description: ${item.description || "No description"}
+const numberedList = selectedProducts
+  .map((item, i) => `${i + 1}. ${item.title}`)
+  .join("\n");
 
-Give a short and punchy reason in 1-2 lines why this is a good match. Mention top features like battery, mic, or ANC if relevant.`;
+const batchedPrompt = `
+You are a smart shopping assistant.
 
-      let reason = "AI reason unavailable";
-      try {
-        const reasonRes = await openai.chat.completions.create({
-          model: "llama3-70b-8192",
-          messages: [
-            { role: "system", content: "You are a smart, persuasive shopping assistant." },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.7,
-        });
+A user searched: "${userQuery}"
 
-        reason = reasonRes.choices[0].message.content.trim();
-      } catch (err) {
-        console.warn("⚠️ Reason generation failed:", err.message);
-      }
+Below is a list of product titles. Give one short, catchy reason (max 20 words) why someone should buy each product. Format your answer as a numbered list.
 
-      // Optional feature summary
-      const featureLine = [
-        item.extensions?.join(" • ") ||
-        item.description?.split(",").slice(0, 3).join(" • ") ||
-        "Key specs available",
-      ].join("");
+${numberedList}
+`;
 
-      return {
-        title: item.title,
-        price: item.price,
-        imageUrl: item.thumbnail || item.source?.image,
-        link: item.link,
-        formatted: `🎧 ${item.title} – ${item.price}\n🟢 ${featureLine}\n\n"${reason}"`,
-        reason,
-      };
-    })
-  );
+let reasonLines = [];
+
+try {
+  const batchedRes = await openai.chat.completions.create({
+    model: "llama3-70b-8192",
+    messages: [
+      { role: "system", content: "You are a persuasive shopping assistant." },
+      { role: "user", content: batchedPrompt },
+    ],
+    temperature: 0.7,
+  });
+
+  const content = batchedRes.choices[0].message.content.trim();
+  reasonLines = content
+    .split("\n")
+    .map(line => line.replace(/^\d+\.\s*/, '').trim())
+    .filter(Boolean);
+
+  console.log("🟢 Groq batched response:", reasonLines);
+} catch (err) {
+  console.warn("⚠️ Batched reason generation failed:", err.message);
+}
+
+// Final product formatting
+const results = selectedProducts.map((item, i) => {
+  const reason = reasonLines[i] || "AI reason unavailable";
+
+  const featureLine =
+    item.extensions?.join(" • ") ||
+    item.description?.split(",").slice(0, 3).join(" • ") ||
+    "Key specs available";
+
+  return {
+    title: item.title,
+    price: item.price,
+    imageUrl: item.thumbnail || item.source?.image,
+    link: item.link,
+    formatted: `🎧 ${item.title} – ${item.price}\n🟢 ${featureLine}\n\n"${reason}"`,
+    reason,
+  };
+});
+
 
   // STEP 5: Sponsored suggestion (optional)
   if (intent.max_price && intent.max_price >= 4500 && intent.max_price < 6500) {
