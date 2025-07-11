@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import searchRoutes from "./routes/search.js";
 
+
 dotenv.config();
 
 const app = express();
@@ -13,10 +14,12 @@ app.use(express.json());
 
 app.use("/search", searchRoutes);
 
+
 app.get("/", (req, res) => {
   res.send("FoundIt backend is live 🚀");
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`✅ Server is running on http://localhost:${PORT}`);
 });
+

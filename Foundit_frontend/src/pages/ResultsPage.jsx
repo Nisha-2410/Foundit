@@ -14,7 +14,7 @@ const ResultsPage = () => {
       console.log("🟢 Fetching from:", `${API_URL}/search?q=${encodeURIComponent(query)}`);
 
       try {
-        const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}&limit=12`);
         const data = await res.json();
 
         console.log("🔵 Response from backend:", data);
@@ -51,7 +51,7 @@ const ResultsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {results.map((item, idx) => (
             <div key={idx} className="bg-white p-4 rounded-xl shadow-lg">
-              <img src={item.imageUrl} alt={item.title} className="w-full h-48 object-cover rounded mb-3" />
+              <img src={item.imageUrl} alt={item.title} className="w-full max-h-60 object-contain bg-gray-100 rounded border mb-3" />
               <h3 className="text-lg font-bold text-blue-800">{item.title}</h3>
               <p className="text-gray-600 text-sm">{item.description}</p>
               <p className="mt-2 text-green-700 text-sm">💡 {item.reason}</p>
