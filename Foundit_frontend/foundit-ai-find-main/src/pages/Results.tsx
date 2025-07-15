@@ -18,7 +18,7 @@ const Results = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}?q=${encodeURIComponent(query)}`);
       const data = await res.json();
 
       if (data.success) {
