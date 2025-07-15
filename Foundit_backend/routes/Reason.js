@@ -4,44 +4,54 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: process.env.OPENAI_API_KEY,
+  
 });
 
 export async function generateReason(userQuery, item, intentCategory = "") {
 const prompt = `
-You are a fashion-forward, emotionally intelligent shopping assistant.
+You are a fashion-savvy, emotionally intelligent shopping assistant.
 
-The user searched for: "${userQuery}"
-They are likely looking for something in the category: "${intentCategory}"
+The user searched: "${userQuery}"
+Intended category: "${intentCategory}"
 
-Here is one product:
+Product:
 - Title: ${item.title}
 - Description: ${item.description || "No description"}
+- Price: ₹${item.price || "Unknown"}
 
-Your job is to:
-- Understand the vibe or intention behind the user’s search (e.g. glam party look, everyday wear, soft girl aesthetic, budget glam, formal matte, bold red lips, no-makeup look, etc.)
-- Compare it with the product title and description.
-- Judge if this product fits that emotional/functional vibe.
-- If YES: write a short, friendly 1–2 line reason why this product matches the user’s vibe and intent. Mention mood, style, standout features (e.g. long-lasting, shade variety, minimalist, nourishing, bold, luxurious, subtle, etc).
-- If NOT: politely explain why it’s not a good fit, and suggest skipping it.
+Your job:
+- Understand the mood or aesthetic behind the user's query (e.g. glam, daily wear, soft girl, budget matte, bold red).
+- Check if the product fits the vibe and price expectation.
+- If it's a **match**, reply with ONE short stylish line (max 20 words) mentioning:
+  - Mood/aesthetic
+  - Standout feature
+  - Price vibe (e.g. budget find, luxe buy, everyday essential)
 
-Be witty, kind, and helpful. Your tone should feel like a best friend giving good beauty advice. Respond ONLY with your answer, no extra formatting.`;
+- If it's **not a direct match**, respond with:
+  - A kind nudge why it may not fully fit
+  - A clever suggestion where or how it *might still work* (e.g. layering, occasion, pairing)
+
+Keep tone playful, smart, and honest — like a fashionable best friend.  
+Return **only** the final sentence. No intro, no bullets, no markdown.
+`;
+
 
 
   try {
     const res = await openai.chat.completions.create({
-      model: "llama3-70b-8192",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: "You are a witty but concise shopping assistant who gives accurate, honest suggestions." },
         { role: "user", content: prompt },
       ],
       temperature: 0.6,
     });
-
+console.log("AI Response:", res.choices[0].message.content);
     return res.choices[0].message.content.trim();
   } catch (err) {
     console.warn("⚠️ Reason generation failed:", err.message);
+     console.error("Full error object:", err);
     return "AI reason unavailable";
   }
 }

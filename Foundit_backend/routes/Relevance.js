@@ -4,40 +4,51 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function scoreRelevance(userQuery, intentCategory, product) {
+export async function scoreRelevance(userQuery, intentCategory, product, expectedPriceRange = "", features = []) {
   const prompt = `
-You're a smart shopping filter AI.
+You're an expert shopping assistant. Evaluate how well the following product matches the user's intent and return a JSON in this format:
+{
+  "score": number (0-10),
+  "categoryMatch": number (0-3),
+  "priceMatch": number (0-3),
+  "featureMatch": number (0-4),
+  "reason": "short explanation of the score"
+}
 
 User query: "${userQuery}"
-Intended category: "${intentCategory}"
+Expected category: "${intentCategory}"
+Expected price range: ₹${expectedPriceRange || "Not specified"}
+Key intent keywords: ${features.length > 0 ? features.join(", ") : "None"}
 
-Evaluate the relevance of the following product:
-
-Title: ${product.title}
+Product Title: ${product.title}
+Price: ₹${product.price || "Unknown"}
 Description: ${product.description || "No description"}
 
-On a scale of 0 to 10, how relevant is this product to the query and category?
-
-Respond ONLY with a number between 0 and 10. No text.
-`;
+Return ONLY the JSON.
+  `;
 
   try {
     const res = await openai.chat.completions.create({
-      model: "llama3-70b-8192",
-      messages: [
-        { role: "user", content: prompt }
-      ],
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.2,
     });
 
-    const score = parseFloat(res.choices[0].message.content.trim());
-    return isNaN(score) ? 0 : score;
+    const jsonText = res.choices[0].message.content.trim();
+
+    const parsed = JSON.parse(jsonText);
+    return parsed;
   } catch (err) {
-    console.warn("⚠️ Relevance scoring failed:", err.message);
-    return 0;
+    console.warn("⚠️ Relevance scoring failed or JSON parse error:", err.message);
+    return {
+      score: 0,
+      categoryMatch: 0,
+      priceMatch: 0,
+      featureMatch: 0,
+      reason: "Error in scoring or model response",
+    };
   }
 }

@@ -6,8 +6,8 @@ import { scoreRelevance } from "./Relevance.js";
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: process.env.OPENAI_API_KEY,
+  
 });
 
 // 🧠 STEP 1: Extract shopping intent using LLM
@@ -20,7 +20,7 @@ export async function getIntentFromQuery(userQuery) {
   "avoid": ["..."]
 }`;
   const res = await openai.chat.completions.create({
-    model: "llama3-70b-8192",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
   });

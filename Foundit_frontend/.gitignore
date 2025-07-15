@@ -1,6 +1,0 @@
-/Foundit_backend/
-node_modules/
-dist/
-.DS_Store
-.env
-.vscode/
